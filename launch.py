@@ -7,6 +7,7 @@ from PyQt5 import QtWidgets, QtGui
 from PyQt5.uic import loadUi
 
 BASEDIR = os.path.dirname(__file__)
+CONFIG = configparser.ConfigParser()
 
 try:
     from ctypes import windll  # Only exists on Windows.
@@ -16,6 +17,46 @@ try:
 except ImportError:
     pass
 
+class KatanaLauncherSettings(QtWidgets.QDialog):
+    """class representing the settings dialog box for setting user paths"""
+    def __init__(self):
+        super(KatanaLauncherSettings, self).__init__()
+        loadUi(os.path.join(BASEDIR, "assets\\KatanaLauncherSettings.ui"), self)
+        self.setWindowIcon(QtGui.QIcon(os.path.join(BASEDIR, "assets\\Katana.ico")))
+
+        self.LE_Katana_Root.setText(CONFIG.get("Katana", "Path"))
+        self.LE_RenderMan.setText(CONFIG.get("RenderMan", "Path"))
+        self.LE_Arnold.setText(CONFIG.get("Arnold", "Path"))
+        self.PB_Cancel.pressed.connect(self.close)
+        self.PB_Save.pressed.connect(self.save)
+
+        self.PB_Katana_Root.pressed.connect(self.selectKatanaPath)
+        self.PB_RenderMan.pressed.connect(self.selectRendermanPath)
+        self.PB_Arnold.pressed.connect(self.selectArnoldPath)
+
+    def selectKatanaPath(self):
+        fname = QtWidgets.QFileDialog.getExistingDirectory(
+            self, "Katana Install location", 'C:\Program Files', QtWidgets.QFileDialog.ShowDirsOnly)
+        self.LE_Katana_Root.setText(fname)
+
+    def selectRendermanPath(self):
+        fname = QtWidgets.QFileDialog.getExistingDirectory(
+            self, "RenderMan Install location", 'C:\Program Files', QtWidgets.QFileDialog.ShowDirsOnly)
+        self.LE_RenderMan.setText(fname)
+
+    def selectArnoldPath(self):
+        fname = QtWidgets.QFileDialog.getExistingDirectory(
+            self, "Katana Install location", 'C:\Program Files', QtWidgets.QFileDialog.ShowDirsOnly)
+        self.LE_Arnold.setText(fname)
+
+    def save(self):
+        CONFIG['Katana']['Path'] = self.LE_Katana_Root.text()
+        CONFIG['RenderMan']['Path'] = self.LE_RenderMan.text()
+        CONFIG['Arnold']['Path'] = self.LE_Arnold.text()
+        with open(os.path.join(BASEDIR, "config.ini"),'w', encoding="utf-8") as configFile:
+            CONFIG.write(configFile)
+        self.close()
+        ui.populate()
 
 class KatanaLauncher(QtWidgets.QMainWindow):
     """class representing the main launcher UI"""
@@ -24,14 +65,14 @@ class KatanaLauncher(QtWidgets.QMainWindow):
         super(KatanaLauncher, self).__init__()
         loadUi(os.path.join(BASEDIR, "assets\\KatanaLauncher.ui"), self)
         self.setWindowIcon(QtGui.QIcon(os.path.join(BASEDIR, "assets\\Katana.ico")))
-        self.config = configparser.ConfigParser()
-        self.config.read(os.path.join(BASEDIR, "config.ini"))
+        CONFIG.read(os.path.join(BASEDIR, "config.ini"))
+        self.settings = KatanaLauncherSettings()
         self.populate()
         self.refresh_BTN.clicked.connect(self.populate)
         self.renderer_CB.currentTextChanged.connect(self.renderer_changed)
         self.katana_version_CB.currentTextChanged.connect(self.renderer_changed)
         self.editScripts_BTN.pressed.connect(self.edit_scripts)
-        self.settings_BTN.pressed.connect(self.open_settings)
+        self.settings_BTN.pressed.connect(self.settings.show)
         self.run_BTN.pressed.connect(self.launch)
 
     def center_on_screen(self):
@@ -51,7 +92,7 @@ class KatanaLauncher(QtWidgets.QMainWindow):
             self.renderer_version_CB.addItem("Katana Version")
             self.renderer_version_CB.setCurrentIndex(0)
         elif index == "RenderMan":
-            renderman_path = self.config.get("RenderMan", "Path")
+            renderman_path = CONFIG.get("RenderMan", "path")
             renderman_versions = [
                 file.split("-")[1]
                 for file in os.listdir(renderman_path)
@@ -59,10 +100,14 @@ class KatanaLauncher(QtWidgets.QMainWindow):
                 and os.path.isdir(renderman_path + "\\" + file)
             ]
             renderman_versions.reverse()
-            self.renderer_version_CB.addItems(renderman_versions)
-            self.renderer_version_CB.setEnabled(True)
+            if not renderman_versions:
+                self.renderer_version_CB.addItem('None')
+                self.renderer_version_CB.setEnabled(False)
+            else:
+                self.renderer_version_CB.addItems(renderman_versions)
+                self.renderer_version_CB.setEnabled(True)
         elif index == "Arnold":
-            arnold_path = self.config.get("Arnold", "Path")
+            arnold_path = CONFIG.get("Arnold", "path")
             arnold_versions = [
                 file.split("-")[1]
                 for file in os.listdir(arnold_path)
@@ -71,8 +116,12 @@ class KatanaLauncher(QtWidgets.QMainWindow):
                 and os.path.isdir(arnold_path + "\\" + file)
             ]
             arnold_versions.reverse()
-            self.renderer_version_CB.addItems(arnold_versions)
-            self.renderer_version_CB.setEnabled(True)
+            if not arnold_versions:
+                self.renderer_version_CB.addItem('None')
+                self.renderer_version_CB.setEnabled(False)
+            else:
+                self.renderer_version_CB.addItems(arnold_versions)
+                self.renderer_version_CB.setEnabled(True)
         else:
             self.renderer_version_CB.setEnabled(False)
 
@@ -88,10 +137,10 @@ class KatanaLauncher(QtWidgets.QMainWindow):
         self.katana_version_CB.clear()
         self.renderer_CB.clear()
 
-        self.config.read(os.path.join(BASEDIR, "config.ini"))
+        CONFIG.read(os.path.join(BASEDIR, "config.ini"))
         if self.validate_paths():
             # get versions
-            katana_path = self.config.get("Katana", "Path")
+            katana_path = CONFIG.get("Katana", "path")
             katana_versions = [
                 file[6:]
                 for file in os.listdir(katana_path)
@@ -125,13 +174,11 @@ class KatanaLauncher(QtWidgets.QMainWindow):
         os.environ["KATANA_VERSION"] = katana_version
         os.environ["KATANA_LINE"] = katana_version[:3]
         os.environ["KATANA_ROOT"] = (
-            self.config.get("Katana", "Path") + "\\Katana" + katana_version
+            CONFIG.get("Katana", "path") + "\\Katana" + katana_version
         )
         os.environ["RENVER"] = self.renderer_version_CB.currentText()
         renderer = self.renderer_CB.currentText()
-        # Sanity check inputs
-        print("KATANA VERSION: " + katana_version)
-        print("RENDERER VERSION: " + renderer)
+
 
         if katana_version == "" or renderer == "":
             QtWidgets.QMessageBox.critical(
@@ -177,14 +224,10 @@ class KatanaLauncher(QtWidgets.QMainWindow):
                 + os.path.join(BASEDIR, "scripts/" + script.text() + ".bat")
             )
 
-    def open_settings(self):
-        """Open the settings config notepad"""
-        subprocess.Popen("notepad.exe " + os.path.join(BASEDIR, "config.ini"))
-
     def validate_paths(self):
         """Ensure all paths in config file exist"""
-        for section in self.config.sections():
-            path = self.config.get(section, "Path")
+        for section in CONFIG.sections():
+            path = CONFIG.get(section, "path")
             if not os.path.exists(path):
                 QtWidgets.QMessageBox.critical(
                     None,
