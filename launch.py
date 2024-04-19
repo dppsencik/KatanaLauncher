@@ -5,6 +5,8 @@ import subprocess
 from pathlib import Path
 from PyQt5 import QtWidgets, QtGui
 from PyQt5.uic import loadUi
+from settings import KatanaLauncherSettings
+from editscripts import KatanaLauncherEditor
 
 BASEDIR = os.path.dirname(__file__)
 CONFIG = configparser.ConfigParser()
@@ -17,46 +19,6 @@ try:
 except ImportError:
     pass
 
-class KatanaLauncherSettings(QtWidgets.QDialog):
-    """class representing the settings dialog box for setting user paths"""
-    def __init__(self):
-        super(KatanaLauncherSettings, self).__init__()
-        loadUi(os.path.join(BASEDIR, "assets\\KatanaLauncherSettings.ui"), self)
-        self.setWindowIcon(QtGui.QIcon(os.path.join(BASEDIR, "assets\\Katana.ico")))
-
-        self.LE_Katana_Root.setText(CONFIG.get("Katana", "Path"))
-        self.LE_RenderMan.setText(CONFIG.get("RenderMan", "Path"))
-        self.LE_Arnold.setText(CONFIG.get("Arnold", "Path"))
-        self.PB_Cancel.pressed.connect(self.close)
-        self.PB_Save.pressed.connect(self.save)
-
-        self.PB_Katana_Root.pressed.connect(self.selectKatanaPath)
-        self.PB_RenderMan.pressed.connect(self.selectRendermanPath)
-        self.PB_Arnold.pressed.connect(self.selectArnoldPath)
-
-    def selectKatanaPath(self):
-        fname = QtWidgets.QFileDialog.getExistingDirectory(
-            self, "Katana Install location", 'C:\Program Files', QtWidgets.QFileDialog.ShowDirsOnly)
-        self.LE_Katana_Root.setText(fname)
-
-    def selectRendermanPath(self):
-        fname = QtWidgets.QFileDialog.getExistingDirectory(
-            self, "RenderMan Install location", 'C:\Program Files', QtWidgets.QFileDialog.ShowDirsOnly)
-        self.LE_RenderMan.setText(fname)
-
-    def selectArnoldPath(self):
-        fname = QtWidgets.QFileDialog.getExistingDirectory(
-            self, "Katana Install location", 'C:\Program Files', QtWidgets.QFileDialog.ShowDirsOnly)
-        self.LE_Arnold.setText(fname)
-
-    def save(self):
-        CONFIG['Katana']['Path'] = self.LE_Katana_Root.text()
-        CONFIG['RenderMan']['Path'] = self.LE_RenderMan.text()
-        CONFIG['Arnold']['Path'] = self.LE_Arnold.text()
-        with open(os.path.join(BASEDIR, "config.ini"),'w', encoding="utf-8") as configFile:
-            CONFIG.write(configFile)
-        self.close()
-        ui.populate()
 
 class KatanaLauncher(QtWidgets.QMainWindow):
     """class representing the main launcher UI"""
@@ -67,11 +29,12 @@ class KatanaLauncher(QtWidgets.QMainWindow):
         self.setWindowIcon(QtGui.QIcon(os.path.join(BASEDIR, "assets\\Katana.ico")))
         CONFIG.read(os.path.join(BASEDIR, "config.ini"))
         self.settings = KatanaLauncherSettings()
+        self.editor = KatanaLauncherEditor()
         self.populate()
         self.refresh_BTN.clicked.connect(self.populate)
         self.renderer_CB.currentTextChanged.connect(self.renderer_changed)
         self.katana_version_CB.currentTextChanged.connect(self.renderer_changed)
-        self.editScripts_BTN.pressed.connect(self.edit_scripts)
+        self.editScripts_BTN.pressed.connect(self.edit_script)
         self.settings_BTN.pressed.connect(self.settings.show)
         self.run_BTN.pressed.connect(self.launch)
 
@@ -167,6 +130,15 @@ class KatanaLauncher(QtWidgets.QMainWindow):
             self.katana_version_CB.addItems(katana_versions)
             self.renderer_CB.addItems(renderers)
 
+    def edit_script(self):
+        optional_scripts = []
+        for i in range(self.scripts_layout.count() - 1):
+            if self.scripts_layout.itemAt(i).widget().isChecked():
+                optional_scripts.append(self.scripts_layout.itemAt(i).widget().text())
+        if optional_scripts:
+            self.editor.load_data(optional_scripts[0])
+            self.editor.show()
+
     def launch(self):
         """Gather all environment variables, combine, and run a single .bat, launching Katana"""
         # Gather user input
@@ -194,7 +166,7 @@ class KatanaLauncher(QtWidgets.QMainWindow):
             for i in range(self.scripts_layout.count() - 1)
             if self.scripts_layout.itemAt(i).widget().isChecked()
         )
-        cmd = ""
+        cmd = "@echo off \n"
         for script in optional_scripts:
             cmd += Path(
                 os.path.join(BASEDIR, "scripts\\" + script.text() + ".bat")
@@ -210,19 +182,6 @@ class KatanaLauncher(QtWidgets.QMainWindow):
             f.write(cmd)
 
         os.system("start cmd /c temp.bat")
-
-    def edit_scripts(self):
-        """Open a notepad of user selected scripts to be edited"""
-        optional_scripts = (
-            self.scripts_layout.itemAt(i).widget()
-            for i in range(self.scripts_layout.count() - 1)
-            if self.scripts_layout.itemAt(i).widget().isChecked()
-        )
-        for script in optional_scripts:
-            subprocess.Popen(
-                "notepad.exe "
-                + os.path.join(BASEDIR, "scripts/" + script.text() + ".bat")
-            )
 
     def validate_paths(self):
         """Ensure all paths in config file exist"""
