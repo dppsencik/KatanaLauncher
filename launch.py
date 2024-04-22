@@ -30,13 +30,13 @@ class KatanaLauncher(QtWidgets.QMainWindow):
         CONFIG.read(os.path.join(BASEDIR, "config.ini"))
         self.settings = KatanaLauncherSettings()
         self.editor = KatanaLauncherEditor()
-        self.populate()
         self.refresh_BTN.clicked.connect(self.populate)
         self.renderer_CB.currentTextChanged.connect(self.renderer_changed)
         self.katana_version_CB.currentTextChanged.connect(self.renderer_changed)
         self.editScripts_BTN.pressed.connect(self.edit_script)
         self.settings_BTN.pressed.connect(self.settings.show)
         self.run_BTN.pressed.connect(self.launch)
+        self.populate()
 
     def center_on_screen(self):
         """Centers the window to the users screen."""
