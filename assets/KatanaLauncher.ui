@@ -251,7 +251,7 @@
       <item row="3" column="1">
        <widget class="QPushButton" name="editScripts_BTN">
         <property name="text">
-         <string>Edit Scripts</string>
+         <string>Edit Script</string>
         </property>
        </widget>
       </item>

@@ -135,9 +135,16 @@ class KatanaLauncher(QtWidgets.QMainWindow):
         for i in range(self.scripts_layout.count() - 1):
             if self.scripts_layout.itemAt(i).widget().isChecked():
                 optional_scripts.append(self.scripts_layout.itemAt(i).widget().text())
-        if optional_scripts:
+        if len(optional_scripts) == 1:
             self.editor.load_data(optional_scripts[0])
             self.editor.show()
+        else:
+            QtWidgets.QMessageBox.critical(
+                    None,
+                    "Warning",
+                    "Please select one script to edit.",
+                    QtWidgets.QMessageBox.Ok,
+                )
 
     def launch(self):
         """Gather all environment variables, combine, and run a single .bat, launching Katana"""
@@ -191,7 +198,7 @@ class KatanaLauncher(QtWidgets.QMainWindow):
                 QtWidgets.QMessageBox.critical(
                     None,
                     "Error",
-                    "One or more of your paths are not valid, please modify your config.ini file.",
+                    "One or more of your paths are not valid, please change your settings.",
                     QtWidgets.QMessageBox.Ok,
                 )
                 return False
