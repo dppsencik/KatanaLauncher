@@ -1,7 +1,7 @@
 export DEFAULT_RENDERER=arnold
 export KTOA_ROOT=/opt/Autodesk/ktoa/ktoa-$RENVER-kat${KATANA_VERSION:0:3}-linux
-export solidangle_LICENSE=2082@softlicsrv.thefoundry.co.uk
-export ADSKFLEX_LICENSE_FILE=2082@softlicsrv.thefoundry.co.uk
+export solidangle_LICENSE=
+export ADSKFLEX_LICENSE_FILE=
 export ARNOLD_PLUGIN_PATH=$KTOA_ROOT/Plugins
 export KATANA_RESOURCES=$KATANA_RESOURCES:$KTOA_ROOT
 export PATH=$PATH:$KTOA_ROOT/bin

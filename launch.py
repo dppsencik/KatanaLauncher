@@ -61,7 +61,7 @@ class KatanaLauncher(QtWidgets.QMainWindow):
             renderman_versions = [
                 file.split("-")[1]
                 for file in renderman_path.iterdir()
-                if "RenderManForKatana" in file
+                if "RenderManForKatana" in str(file)
                 and renderman_path.joinpath(file).is_file()
             ]
             renderman_versions.reverse()
@@ -76,8 +76,8 @@ class KatanaLauncher(QtWidgets.QMainWindow):
             arnold_versions = [
                 file.split("-")[1]
                 for file in arnold_path.iterdir()
-                if "kat" + katana_line in file
-                and "ktoa" in file
+                if "kat" + katana_line in str(file)
+                and "ktoa" in str(file)
                 and arnold_path.joinpath(file).is_file()
             ]
             arnold_versions.reverse()
@@ -127,7 +127,7 @@ class KatanaLauncher(QtWidgets.QMainWindow):
                 katana_versions = [
                     str(file.name)[6:]
                     for file in katana_path.iterdir()
-                    if Path.is_file(katana_path.joinpath(file, "bin", "katana"))
+                    if Path.is_file(katana_path.joinpath(file, "bin", "katanaBin"))
                 ]
                 renderers = [
                     str(file.name)[0:-3]
@@ -208,6 +208,7 @@ class KatanaLauncher(QtWidgets.QMainWindow):
             cmd = ''
             for script in optional_scripts:
                 cmd += BASEDIR.joinpath("scripts", "Linux", script.text() + ".sh").read_text(encoding="utf-8")
+                cmd += "\n"
             cmd += BASEDIR.joinpath("scripts", "Linux", "Renderers", renderer + ".sh").read_text(encoding="utf-8")
             cmd += "\n$KATANA_ROOT/katana"
             cmd += "\nrm -- \"$0\""
