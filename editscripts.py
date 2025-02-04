@@ -7,6 +7,7 @@ import sys
 
 
 BASEDIR = Path(__file__).parent
+OS = os.name
 
 class KatanaLauncherEditor(QtWidgets.QMainWindow):
     """Class representing the script editor window"""
@@ -32,20 +33,36 @@ class KatanaLauncherEditor(QtWidgets.QMainWindow):
 
     def convert_script(self, script):
         variables = {}
-        with open(BASEDIR.joinpath("scripts", script, ".bat"),'r', encoding="utf-8") as script:
-            for line in script.read().splitlines():
-                if line.startswith("set"):
-                    split = line.split("=")
-                    variables[split[0].removeprefix("set \"")] = split[1].removesuffix("\"")
+        if OS == "nt":
+            with open(BASEDIR.joinpath("scripts", "Windows", script + ".bat"),'r', encoding="utf-8") as script:
+                for line in script.read().splitlines():
+                    if line.startswith("set"):
+                        split = line.split("=")
+                        variables[split[0].removeprefix("set \"")] = split[1].removesuffix("\"")
+        else:
+            with open(BASEDIR.joinpath("scripts", "Linux", script + ".sh"), 'r', encoding='utf-8') as script:
+                for line in script.read().splitlines():
+                    if line.startswith("export"):
+                        split = line.split("=")
+                        variables[split[0].removeprefix("export \"")] = split[1].removesuffix("\"")
 
         return variables
     
     def save(self):
         lines = []
-        for i in range(self.tableWidget.rowCount()):
-            lines.append("set \"" + self.tableWidget.item(i,0).text() + "=" + self.tableWidget.item(i,1).text() + "\" \n")
-        with open(BASEDIR.joinpath("scripts", self.activeScript, ".bat"), 'w', encoding="utf-8") as script:
-            script.writelines(lines)
+        
+        if OS == "nt":
+            for i in range(self.tableWidget.rowCount()):
+                lines.append("set \"" + self.tableWidget.item(i,0).text() + "=" + self.tableWidget.item(i,1).text() + "\" \n")
+            with open(BASEDIR.joinpath("scripts", "Windows", self.activeScript + ".bat"), 'w', encoding="utf-8") as script:
+                script.writelines(lines)
+        else:
+            for i in range(self.tableWidget.rowCount()):
+                lines.append("export \"" + self.tableWidget.item(i,0).text() + "=" + self.tableWidget.item(i,1).text() + "\" \n")
+            with open(BASEDIR.joinpath("scripts", "Linux", self.activeScript + ".sh"), 'w', encoding="utf-8") as script:
+                script.writelines(lines)
+
+        self.close()
         
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)

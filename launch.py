@@ -11,6 +11,7 @@ from editscripts import KatanaLauncherEditor
 
 BASEDIR = Path(__file__).parent
 CONFIG = configparser.ConfigParser()
+OS = os.name
 
 try:
     from ctypes import windll  # Only exists on Windows.
@@ -103,24 +104,42 @@ class KatanaLauncher(QtWidgets.QMainWindow):
 
         CONFIG.read(BASEDIR.joinpath("config.ini"))
         if self.validate_paths():
-            # get versions
             katana_path = Path(CONFIG.get("Katana", "path"))
-            katana_versions = [
-                file[6:]
-                for file in katana_path.iterdir()
-                if Path.is_file(katana_path.joinpath(file,"bin", "katanaBin.exe"))
-            ]
-            renderers = [
-                file[0:-4]
-                for file in BASEDIR.joinpath("scripts", "Renderers").iterdir()
-                if file.endswith(".bat")
-            ]
-            scripts = [
-                file[0:-4]
-                for file in BASEDIR.joinpath("scripts").iterdir()
-                if file.endswith(".bat")
-            ]
-            # get scripts
+            # Find versions with Windows file expectations
+            if OS == 'nt':
+                katana_versions = [
+                    str(file.name)[6:]
+                    for file in katana_path.iterdir()
+                    if Path.is_file(katana_path.joinpath(file,"bin", "katanaBin.exe"))
+                ]
+                renderers = [
+                    str(file.name)[0:-4]
+                    for file in BASEDIR.joinpath("scripts", "Windows", "Renderers").iterdir()
+                    if str(file).endswith(".bat")
+                ]
+                scripts = [
+                    str(file.name)[0:-4]
+                    for file in BASEDIR.joinpath("scripts", "Windows").iterdir()
+                    if str(file).endswith(".bat")
+                ]
+            # Find versions with Linux file expectations
+            else:
+                katana_versions = [
+                    str(file.name)[6:]
+                    for file in katana_path.iterdir()
+                    if Path.is_file(katana_path.joinpath(file, "bin", "katana"))
+                ]
+                renderers = [
+                    str(file.name)[0:-3]
+                    for file in BASEDIR.joinpath("scripts", "Linux", "Renderers").iterdir()
+                    if str(file).endswith(".sh")
+                ]
+                scripts = [
+                    str(file.name)[0:-3]
+                    for file in BASEDIR.joinpath("scripts", "Linux").iterdir()
+                    if str(file).endswith(".sh")
+                ]
+            # genereate script checkboxes
             for script in scripts:
                 check_box = QtWidgets.QCheckBox(script)
                 self.scripts_layout.addWidget(check_box)
@@ -153,9 +172,7 @@ class KatanaLauncher(QtWidgets.QMainWindow):
         katana_version = self.katana_version_CB.currentText()
         os.environ["KATANA_VERSION"] = katana_version
         os.environ["KATANA_LINE"] = katana_version[:3]
-        os.environ["KATANA_ROOT"] = (
-            CONFIG.get("Katana", "path") + "\\Katana" + katana_version
-        )
+        os.environ["KATANA_ROOT"] = Path(CONFIG.get("Katana", "path")).joinpath("Katana", katana_version)
         os.environ["RENVER"] = self.renderer_version_CB.currentText()
         renderer = self.renderer_CB.currentText()
 

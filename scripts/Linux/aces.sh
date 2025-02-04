@@ -1,0 +1,1 @@
+export "OCIO=C:\Users\AndrewPsencik\Documents\OpenColorIO-Config-ACES-1.2\aces_1.2\config.ocio"

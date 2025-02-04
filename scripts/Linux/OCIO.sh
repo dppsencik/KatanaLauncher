@@ -1,0 +1,1 @@
+export "OCIO=C:\Users\AndrewPsencik\Downloads\filmic\config.ocio"
