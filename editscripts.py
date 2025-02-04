@@ -1,18 +1,19 @@
 from PyQt5 import QtWidgets, QtGui
 from PyQt5.QtCore import Qt
 from PyQt5.uic import loadUi
+from pathlib import Path
 import os
 import sys
 
 
-BASEDIR = os.path.dirname(__file__)
+BASEDIR = Path(__file__).parent
 
 class KatanaLauncherEditor(QtWidgets.QMainWindow):
     """Class representing the script editor window"""
     def __init__(self):
         super(KatanaLauncherEditor, self).__init__()
-        loadUi(os.path.join(BASEDIR, "assets\\KatanaLauncherEditor.ui"), self)
-        self.setWindowIcon(QtGui.QIcon(os.path.join(BASEDIR, "assets\\Katana.ico")))
+        loadUi(BASEDIR.joinpath("assets", "KatanaLauncherEditor.ui"), self)
+        self.setWindowIcon(QtGui.QIcon(str(BASEDIR.joinpath("assets\\Katana.ico"))))
         self.cancel_BTN.pressed.connect(self.close)
         self.save_BTN.pressed.connect(self.save)
         self.activeScript = ''
@@ -31,7 +32,7 @@ class KatanaLauncherEditor(QtWidgets.QMainWindow):
 
     def convert_script(self, script):
         variables = {}
-        with open(os.path.join(BASEDIR, "scripts\\" + script + ".bat"),'r', encoding="utf-8") as script:
+        with open(BASEDIR.joinpath("scripts", script, ".bat"),'r', encoding="utf-8") as script:
             for line in script.read().splitlines():
                 if line.startswith("set"):
                     split = line.split("=")
@@ -43,7 +44,7 @@ class KatanaLauncherEditor(QtWidgets.QMainWindow):
         lines = []
         for i in range(self.tableWidget.rowCount()):
             lines.append("set \"" + self.tableWidget.item(i,0).text() + "=" + self.tableWidget.item(i,1).text() + "\" \n")
-        with open(os.path.join(BASEDIR, "scripts\\" + self.activeScript + ".bat"), 'w', encoding="utf-8") as script:
+        with open(BASEDIR.joinpath("scripts", self.activeScript, ".bat"), 'w', encoding="utf-8") as script:
             script.writelines(lines)
         
 if __name__ == "__main__":

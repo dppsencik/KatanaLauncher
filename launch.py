@@ -8,7 +8,8 @@ from PyQt5.uic import loadUi
 from settings import KatanaLauncherSettings
 from editscripts import KatanaLauncherEditor
 
-BASEDIR = os.path.dirname(__file__)
+
+BASEDIR = Path(__file__).parent
 CONFIG = configparser.ConfigParser()
 
 try:
@@ -25,9 +26,9 @@ class KatanaLauncher(QtWidgets.QMainWindow):
 
     def __init__(self):
         super(KatanaLauncher, self).__init__()
-        loadUi(os.path.join(BASEDIR, "assets\\KatanaLauncher.ui"), self)
-        self.setWindowIcon(QtGui.QIcon(os.path.join(BASEDIR, "assets\\Katana.ico")))
-        CONFIG.read(os.path.join(BASEDIR, "config.ini"))
+        loadUi(BASEDIR.joinpath("assets", "KatanaLauncher.ui"), self)
+        self.setWindowIcon(QtGui.QIcon(str(BASEDIR.joinpath("assets","Katana.ico"))))
+        CONFIG.read(BASEDIR.joinpath("config.ini"))
         self.settings = KatanaLauncherSettings()
         self.editor = KatanaLauncherEditor()
         self.refresh_BTN.clicked.connect(self.populate)
@@ -55,12 +56,12 @@ class KatanaLauncher(QtWidgets.QMainWindow):
             self.renderer_version_CB.addItem("Katana Version")
             self.renderer_version_CB.setCurrentIndex(0)
         elif index == "RenderMan":
-            renderman_path = CONFIG.get("RenderMan", "path")
+            renderman_path = Path(CONFIG.get("RenderMan", "path"))
             renderman_versions = [
                 file.split("-")[1]
-                for file in os.listdir(renderman_path)
+                for file in renderman_path.iterdir()
                 if "RenderManForKatana" in file
-                and os.path.isdir(renderman_path + "\\" + file)
+                and renderman_path.joinpath(file).is_file()
             ]
             renderman_versions.reverse()
             if not renderman_versions:
@@ -70,13 +71,13 @@ class KatanaLauncher(QtWidgets.QMainWindow):
                 self.renderer_version_CB.addItems(renderman_versions)
                 self.renderer_version_CB.setEnabled(True)
         elif index == "Arnold":
-            arnold_path = CONFIG.get("Arnold", "path")
+            arnold_path = Path(CONFIG.get("Arnold", "path"))
             arnold_versions = [
                 file.split("-")[1]
-                for file in os.listdir(arnold_path)
+                for file in arnold_path.iterdir()
                 if "kat" + katana_line in file
                 and "ktoa" in file
-                and os.path.isdir(arnold_path + "\\" + file)
+                and arnold_path.joinpath(file).is_file()
             ]
             arnold_versions.reverse()
             if not arnold_versions:
@@ -100,23 +101,23 @@ class KatanaLauncher(QtWidgets.QMainWindow):
         self.katana_version_CB.clear()
         self.renderer_CB.clear()
 
-        CONFIG.read(os.path.join(BASEDIR, "config.ini"))
+        CONFIG.read(BASEDIR.joinpath("config.ini"))
         if self.validate_paths():
             # get versions
-            katana_path = CONFIG.get("Katana", "path")
+            katana_path = Path(CONFIG.get("Katana", "path"))
             katana_versions = [
                 file[6:]
-                for file in os.listdir(katana_path)
-                if os.path.isfile(katana_path + "\\" + file + "\\bin\\katanaBin.exe")
+                for file in katana_path.iterdir()
+                if Path.is_file(katana_path.joinpath(file,"bin", "katanaBin.exe"))
             ]
             renderers = [
                 file[0:-4]
-                for file in os.listdir((os.path.join(BASEDIR, "scripts\\Renderers")))
+                for file in BASEDIR.joinpath("scripts", "Renderers").iterdir()
                 if file.endswith(".bat")
             ]
             scripts = [
                 file[0:-4]
-                for file in os.listdir((os.path.join(BASEDIR, "scripts")))
+                for file in BASEDIR.joinpath("scripts").iterdir()
                 if file.endswith(".bat")
             ]
             # get scripts
@@ -193,8 +194,8 @@ class KatanaLauncher(QtWidgets.QMainWindow):
     def validate_paths(self):
         """Ensure all paths in config file exist"""
         for section in CONFIG.sections():
-            path = CONFIG.get(section, "path")
-            if not os.path.exists(path):
+            path = Path(CONFIG.get(section, "path"))
+            if not Path.exists(path):
                 QtWidgets.QMessageBox.critical(
                     None,
                     "Error",

@@ -1,19 +1,21 @@
 from PyQt5.uic import loadUi
 import os
+from pathlib import Path
 from PyQt5 import QtWidgets, QtGui
 import configparser
 
-BASEDIR = os.path.dirname(__file__)
+BASEDIR = Path(__file__).parent
 CONFIG = configparser.ConfigParser()
+OS = os.name
 
 
 class KatanaLauncherSettings(QtWidgets.QDialog):
     """class representing the settings dialog box for setting user paths"""
     def __init__(self):
         super(KatanaLauncherSettings, self).__init__()
-        loadUi(os.path.join(BASEDIR, "assets\\KatanaLauncherSettings.ui"), self)
-        self.setWindowIcon(QtGui.QIcon(os.path.join(BASEDIR, "assets\\Katana.ico")))
-        CONFIG.read(os.path.join(BASEDIR, "config.ini"))
+        loadUi(BASEDIR.joinpath("assets", "KatanaLauncherSettings.ui"), self)
+        self.setWindowIcon(QtGui.QIcon(str(BASEDIR.joinpath("assets","Katana.ico"))))
+        CONFIG.read(BASEDIR.joinpath("config.ini"))
 
         self.LE_Katana_Root.setText(CONFIG.get("Katana", "Path"))
         self.LE_RenderMan.setText(CONFIG.get("RenderMan", "Path"))
@@ -49,6 +51,6 @@ class KatanaLauncherSettings(QtWidgets.QDialog):
         CONFIG['Katana']['Path'] = self.LE_Katana_Root.text()
         CONFIG['RenderMan']['Path'] = self.LE_RenderMan.text()
         CONFIG['Arnold']['Path'] = self.LE_Arnold.text()
-        with open(os.path.join(BASEDIR, "config.ini"),'w', encoding="utf-8") as configFile:
+        with open(BASEDIR.joinpath("config.ini"),'w', encoding="utf-8") as configFile:
             CONFIG.write(configFile)
         self.close()
