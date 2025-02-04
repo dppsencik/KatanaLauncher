@@ -172,10 +172,9 @@ class KatanaLauncher(QtWidgets.QMainWindow):
         katana_version = self.katana_version_CB.currentText()
         os.environ["KATANA_VERSION"] = katana_version
         os.environ["KATANA_LINE"] = katana_version[:3]
-        os.environ["KATANA_ROOT"] = Path(CONFIG.get("Katana", "path")).joinpath("Katana", katana_version)
+        os.environ["KATANA_ROOT"] = str(Path(CONFIG.get("Katana", "path")).joinpath("Katana" + katana_version))
         os.environ["RENVER"] = self.renderer_version_CB.currentText()
         renderer = self.renderer_CB.currentText()
-
 
         if katana_version == "" or renderer == "":
             QtWidgets.QMessageBox.critical(
@@ -185,28 +184,37 @@ class KatanaLauncher(QtWidgets.QMainWindow):
                 QtWidgets.QMessageBox.Ok,
             )
             return
-        # Create and launch script
+        
+        # Gather all checked scripts
         optional_scripts = (
             self.scripts_layout.itemAt(i).widget()
             for i in range(self.scripts_layout.count() - 1)
             if self.scripts_layout.itemAt(i).widget().isChecked()
         )
-        cmd = "@echo off \n"
-        for script in optional_scripts:
-            cmd += Path(
-                os.path.join(BASEDIR, "scripts\\" + script.text() + ".bat")
-            ).read_text(encoding="utf-8")
-        cmd += Path(
-            os.path.join(BASEDIR, "scripts\\Renderers\\" + renderer + ".bat")
-        ).read_text(encoding="utf-8")
-        cmd += '\n"%KATANA_ROOT%\\bin\\katanaBin.exe"'
-        # Temp bat file deletes itself when Katana closes
-        cmd += '\ngoto 2>nul & del "%~f0"'
-        # Create temporary file with all commands
-        with open(os.path.join(BASEDIR, "temp.bat"), "w", encoding="utf-8") as f:
-            f.write(cmd)
-
-        os.system("start cmd /c temp.bat")
+        # Build launch script based on OS
+        if OS == "nt":
+            cmd = "@echo off \n"
+            for script in optional_scripts:
+                cmd += BASEDIR.joinpath("scripts", "Windows", script.text() + ".bat").read_text(encoding="utf-8")
+            cmd += BASEDIR.joinpath("scripts", "Windows", "Renderers", renderer + ".bat").read_text(encoding="utf-8")
+            cmd += '\n"%KATANA_ROOT%\\bin\\katanaBin.exe"'
+            # Temp bat file deletes itself when Katana closes
+            cmd += '\ngoto 2>nul & del "%~f0"'
+            # Create temporary file with all commands
+            with open(os.path.join(BASEDIR, "temp.bat"), "w", encoding="utf-8") as f:
+                f.write(cmd)
+            os.system("start cmd /c temp.bat")
+        else:
+            cmd = ''
+            for script in optional_scripts:
+                cmd += BASEDIR.joinpath("scripts", "Linux", script.text() + ".sh").read_text(encoding="utf-8")
+            cmd += BASEDIR.joinpath("scripts", "Linux", "Renderers", renderer + ".sh").read_text(encoding="utf-8")
+            cmd += "\n$KATANA_ROOT/katana"
+            cmd += "\nrm -- \"$0\""
+            #Create a temp launch file and use it in a new terminal
+            with open(BASEDIR.joinpath('temp.sh'), 'w', encoding="utf-8") as f:
+                f.write(cmd)
+                os.system('gnome-terminal --window -- bash -c \"bash -i temp.sh\"')
 
     def validate_paths(self):
         """Ensure all paths in config file exist"""
