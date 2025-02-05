@@ -59,10 +59,9 @@ class KatanaLauncher(QtWidgets.QMainWindow):
         elif index == "RenderMan":
             renderman_path = Path(CONFIG.get("RenderMan", "path"))
             renderman_versions = [
-                file.split("-")[1]
+                str(file.name).split("-")[1]
                 for file in renderman_path.iterdir()
                 if "RenderManForKatana" in str(file)
-                and renderman_path.joinpath(file).is_file()
             ]
             renderman_versions.reverse()
             if not renderman_versions:
@@ -74,11 +73,10 @@ class KatanaLauncher(QtWidgets.QMainWindow):
         elif index == "Arnold":
             arnold_path = Path(CONFIG.get("Arnold", "path"))
             arnold_versions = [
-                file.split("-")[1]
+                str(file.name).split("-")[1]
                 for file in arnold_path.iterdir()
                 if "kat" + katana_line in str(file)
                 and "ktoa" in str(file)
-                and arnold_path.joinpath(file).is_file()
             ]
             arnold_versions.reverse()
             if not arnold_versions:
@@ -146,7 +144,7 @@ class KatanaLauncher(QtWidgets.QMainWindow):
             self.scripts_layout.addStretch()
 
             # add to UI
-            katana_versions.reverse()
+            katana_versions.sort(reverse=True)
             self.katana_version_CB.addItems(katana_versions)
             self.renderer_CB.addItems(renderers)
 
